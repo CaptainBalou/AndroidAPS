@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -19,7 +20,11 @@ import android.widget.TextView;
 import com.crashlytics.android.answers.Answers;
 import com.crashlytics.android.answers.CustomEvent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.DecimalFormat;
+import java.util.Objects;
 
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
@@ -34,6 +39,7 @@ import info.nightscout.utils.PlusMinusEditText;
 import info.nightscout.utils.SafeParse;
 
 public class NewTreatmentDialog extends DialogFragment implements OnClickListener {
+    private static Logger log = LoggerFactory.getLogger(NewTreatmentDialog.class);
 
     NumberPicker editCarbs;
     NumberPicker editInsulin;
@@ -79,15 +85,16 @@ public class NewTreatmentDialog extends DialogFragment implements OnClickListene
                     Double insulin = SafeParse.stringToDouble(editInsulin.getText());
                     final Integer carbs = SafeParse.stringToInt(editCarbs.getText());
 
-                    String confirmMessage = getString(R.string.entertreatmentquestion) + "\n";
+                    String confirmMessage = getString(R.string.entertreatmentquestion) + "<br/>";
 
                     Double insulinAfterConstraints = MainApp.getConfigBuilder().applyBolusConstraints(insulin);
                     Integer carbsAfterConstraints = MainApp.getConfigBuilder().applyCarbsConstraints(carbs);
 
-                    confirmMessage += getString(R.string.bolus) + ": " + insulinAfterConstraints + "U";
-                    confirmMessage += "\n" + getString(R.string.carbs) + ": " + carbsAfterConstraints + "g";
-                    if (insulinAfterConstraints - insulin != 0 || carbsAfterConstraints != carbs)
-                        confirmMessage += "\n" + getString(R.string.constraintapllied);
+                    confirmMessage += getString(R.string.bolus) + ": " + "<font color='"+ MainApp.sResources.getColor(R.color.bolus) + "'>" + insulinAfterConstraints + "U" + "</font>";
+                    confirmMessage += "<br/>" + getString(R.string.carbs) + ": " + carbsAfterConstraints + "g";
+                    if (insulinAfterConstraints - insulin != 0 || !Objects.equals(carbsAfterConstraints, carbs))
+                        confirmMessage += "<br/>" + getString(R.string.constraintapllied);
+
 
                     final double finalInsulinAfterConstraints = insulinAfterConstraints;
                     final int finalCarbsAfterConstraints = carbsAfterConstraints;
@@ -96,7 +103,7 @@ public class NewTreatmentDialog extends DialogFragment implements OnClickListene
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
                     builder.setTitle(this.getContext().getString(R.string.confirmation));
-                    builder.setMessage(confirmMessage);
+                    builder.setMessage(Html.fromHtml(confirmMessage));
                     builder.setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
                             if (finalInsulinAfterConstraints > 0 || finalCarbsAfterConstraints > 0) {
@@ -129,7 +136,7 @@ public class NewTreatmentDialog extends DialogFragment implements OnClickListene
                     builder.show();
                     dismiss();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Unhandled exception", e);
                 }
                 break;
             case R.id.cancel:

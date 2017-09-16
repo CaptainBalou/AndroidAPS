@@ -17,17 +17,16 @@ import info.nightscout.androidaps.interfaces.InsulinInterface;
 
 public class DetailedBolusInfo {
     public long date = System.currentTimeMillis();
-    public InsulinInterface insulinInterface = MainApp.getConfigBuilder().getActiveInsulin();
     public String eventType = CareportalEvent.MEALBOLUS;
     public double insulin = 0;
     public double carbs = 0;
     public int source = Source.NONE;
+    public boolean isValid = true;
     public double glucose = 0;             // Bg value in current units
     public String glucoseType = "";        // NS values: Manual, Finger, Sensor
     public int carbTime = 0;               // time shift of carbs in minutes
     public JSONObject boluscalc = null;    // additional bolus wizard info
     public Context context = null;         // context for progress dialog
-    public boolean addToTreatments = true;
     public long pumpId = 0;                // id of record if comming from pump history (not a newly created treatment)
     public boolean isSMB = false;          // is a Super-MicroBolus
 }

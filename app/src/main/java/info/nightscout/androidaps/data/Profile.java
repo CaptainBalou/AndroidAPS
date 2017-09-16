@@ -75,7 +75,7 @@ public class Profile {
             ic = json.getJSONArray("carbratio");
             if (getIc(0) == null) {
                 int defaultIC = 25;
-                isf = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultIC + "\",\"timeAsSeconds\":\"0\"}]");
+                ic = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultIC + "\",\"timeAsSeconds\":\"0\"}]");
                 Notification noic = new Notification(Notification.IC_MISSING, MainApp.sResources.getString(R.string.icmissing), Notification.URGENT);
                 MainApp.bus().post(new EventNewNotification(noic));
             } else {
@@ -84,7 +84,7 @@ public class Profile {
             basal = json.getJSONArray("basal");
             if (getBasal(0) == null) {
                 double defaultBasal = 0.1d;
-                isf = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultBasal + "\",\"timeAsSeconds\":\"0\"}]");
+                basal = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultBasal + "\",\"timeAsSeconds\":\"0\"}]");
                 Notification nobasal = new Notification(Notification.BASAL_MISSING, MainApp.sResources.getString(R.string.basalmissing), Notification.URGENT);
                 MainApp.bus().post(new EventNewNotification(nobasal));
             } else {
@@ -93,7 +93,7 @@ public class Profile {
             targetLow = json.getJSONArray("target_low");
             if (getTargetLow(0) == null) {
                 double defaultLow = units.equals(Constants.MGDL) ? 120 : 6;
-                isf = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultLow + "\",\"timeAsSeconds\":\"0\"}]");
+                targetLow = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultLow + "\",\"timeAsSeconds\":\"0\"}]");
                 Notification notarget = new Notification(Notification.TARGET_MISSING, MainApp.sResources.getString(R.string.targetmissing), Notification.URGENT);
                 MainApp.bus().post(new EventNewNotification(notarget));
             } else {
@@ -102,14 +102,14 @@ public class Profile {
             targetHigh = json.getJSONArray("target_high");
             if (getTargetHigh(0) == null) {
                 double defaultHigh = units.equals(Constants.MGDL) ? 160 : 8;
-                isf = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultHigh + "\",\"timeAsSeconds\":\"0\"}]");
+                targetHigh = new JSONArray("[{\"time\":\"00:00\",\"value\":\"" + defaultHigh + "\",\"timeAsSeconds\":\"0\"}]");
                 Notification notarget = new Notification(Notification.TARGET_MISSING, MainApp.sResources.getString(R.string.targetmissing), Notification.URGENT);
                 MainApp.bus().post(new EventNewNotification(notarget));
             } else {
                 MainApp.bus().post(new EventDismissNotification(Notification.TARGET_MISSING));
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
             ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.invalidprofile));
         }
     }
@@ -129,7 +129,7 @@ public class Profile {
             try {
                 json.put("units", units);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         return json;
     }
@@ -156,7 +156,7 @@ public class Profile {
                 Double value = o.getDouble("value");
                 sparse.put(tas, value);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return sparse;
@@ -176,7 +176,7 @@ public class Profile {
                 }
                 lastValue = value;
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return lastValue;
@@ -212,9 +212,10 @@ public class Profile {
                     retValue += format.format(o2.getDouble("value"));
                 }
                 retValue += " " + units;
-                retValue += "\n";
+                if (index + 1 < array.length())
+                    retValue += "\n";
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return retValue;
@@ -296,7 +297,7 @@ public class Profile {
             }
             return ret;
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return new BasalValue[0];
     }
@@ -332,7 +333,7 @@ public class Profile {
     public double getMaxDailyBasal() {
         Double max = 0d;
         for (Integer hour = 0; hour < 24; hour++) {
-            double value = getBasal((Integer)(hour * 60 * 60));
+            double value = getBasal((Integer) (hour * 60 * 60));
             if (value > max) max = value;
         }
         return max;
@@ -377,6 +378,11 @@ public class Profile {
         else return value * Constants.MMOLL_TO_MGDL;
     }
 
+    public static Double toMmol(Double value, String units) {
+        if (units.equals(Constants.MGDL)) return value * Constants.MGDL_TO_MMOLL;
+        else return value;
+    }
+
     public static Double fromMgdlToUnits(Double value, String units) {
         if (units.equals(Constants.MGDL)) return value;
         else return value * Constants.MGDL_TO_MMOLL;
@@ -390,5 +396,18 @@ public class Profile {
     public static String toUnitsString(Double valueInMgdl, Double valueInMmol, String units) {
         if (units.equals(Constants.MGDL)) return DecimalFormatter.to0Decimal(valueInMgdl);
         else return DecimalFormatter.to1Decimal(valueInMmol);
+    }
+
+    // targets are stored in mg/dl but profile vary
+    public static String toTargetRangeString(double low, double high, String sourceUnits, String units) {
+        double lowMgdl = toMgdl(low, sourceUnits);
+        double highMgdl = toMgdl(high, sourceUnits);
+        double lowMmol = toMmol(low, sourceUnits);
+        double highMmol = toMmol(high, sourceUnits);
+        if (low == high)
+            return toUnitsString(lowMgdl, lowMmol, units);
+        else
+            return toUnitsString(lowMgdl, lowMmol, units) + " - " + toUnitsString(highMgdl, highMmol, units);
+
     }
 }

@@ -14,6 +14,8 @@ import android.widget.EditText;
 import android.widget.Spinner;
 
 import org.json.JSONException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,9 +29,10 @@ import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.SafeParse;
 
 public class EditQuickWizardDialog extends DialogFragment implements View.OnClickListener {
+    private static Logger log = LoggerFactory.getLogger(EditQuickWizardDialog.class);
 
     QuickWizard.QuickWizardEntry entry = new QuickWizard().newEmptyItem();
-    QuickWizard quickWizard = ((OverviewPlugin) MainApp.getSpecificPlugin(OverviewPlugin.class)).quickWizard;
+    QuickWizard quickWizard = MainApp.getSpecificPlugin(OverviewPlugin.class).quickWizard;
 
     EditText buttonEdit;
     EditText carbsEdit;
@@ -104,7 +107,7 @@ public class EditQuickWizardDialog extends DialogFragment implements View.OnClic
                     int validToInt = DateUtil.toSeconds(toSpinner.getSelectedItem().toString());
                     entry.storage.put("validTo", validToInt);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    log.error("Unhandled exception", e);
                 }
                 quickWizard.addOrUpdate(entry);
                 dismiss();

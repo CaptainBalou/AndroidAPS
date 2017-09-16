@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.SystemClock;
 
 import com.squareup.otto.Subscribe;
 
@@ -75,7 +76,6 @@ import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusBasic;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusBolusExtended;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.MsgStatusTempBasal;
 import info.nightscout.androidaps.plugins.PumpDanaR.comm.RecordTypes;
-import info.nightscout.androidaps.plugins.PumpDanaR.events.EventDanaRBolusStart;
 import info.nightscout.androidaps.plugins.PumpDanaR.events.EventDanaRNewStatus;
 import info.nightscout.androidaps.plugins.Overview.Notification;
 import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
@@ -209,9 +209,9 @@ public class DanaRExecutionService extends Service {
                 try {
                     mRfcommSocket.connect();
                 } catch (IOException e) {
-                    //e.printStackTrace();
+                    //log.error("Unhandled exception", e);
                     if (e.getMessage().contains("socket closed")) {
-                        e.printStackTrace();
+                        log.error("Unhandled exception", e);
                         break;
                     }
                 }
@@ -318,7 +318,7 @@ public class DanaRExecutionService extends Service {
             }
 
             Date now = new Date();
-            if (danaRPump.lastSettingsRead.getTime() + 60 * 60 * 1000L < now.getTime() || !((DanaRPlugin)MainApp.getSpecificPlugin(DanaRPlugin.class)).isInitialized()) {
+            if (danaRPump.lastSettingsRead.getTime() + 60 * 60 * 1000L < now.getTime() || !MainApp.getSpecificPlugin(DanaRPlugin.class).isInitialized()) {
                 mSerialIOThread.sendMessage(new MsgSettingShippingInfo());
                 mSerialIOThread.sendMessage(new MsgSettingActiveProfile());
                 mSerialIOThread.sendMessage(new MsgSettingMeal());
@@ -326,11 +326,18 @@ public class DanaRExecutionService extends Service {
                 //0x3201
                 mSerialIOThread.sendMessage(new MsgSettingMaxValues());
                 mSerialIOThread.sendMessage(new MsgSettingGlucose());
-                mSerialIOThread.sendMessage(new MsgSettingPumpTime());
                 mSerialIOThread.sendMessage(new MsgSettingActiveProfile());
                 mSerialIOThread.sendMessage(new MsgSettingProfileRatios());
                 mSerialIOThread.sendMessage(new MsgSettingProfileRatiosAll());
-                mSerialIOThread.sendMessage(new MsgSetTime(new Date()));
+                mSerialIOThread.sendMessage(new MsgSettingPumpTime());
+                long timeDiff = (danaRPump.pumpTime.getTime() - System.currentTimeMillis()) / 1000L;
+                log.debug("Pump time difference: " + timeDiff + " seconds");
+                if (Math.abs(timeDiff) > 10) {
+                    mSerialIOThread.sendMessage(new MsgSetTime(new Date()));
+                    mSerialIOThread.sendMessage(new MsgSettingPumpTime());
+                    timeDiff = (danaRPump.pumpTime.getTime() - System.currentTimeMillis()) / 1000L;
+                    log.debug("Pump time difference: " + timeDiff + " seconds");
+                }
                 danaRPump.lastSettingsRead = now;
             }
 
@@ -345,7 +352,7 @@ public class DanaRExecutionService extends Service {
                 NSUpload.uploadError(MainApp.sResources.getString(R.string.approachingdailylimit) + ": " + danaRPump.dailyTotalUnits + "/" + danaRPump.maxDailyTotalUnits + "U");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return true;
     }
@@ -408,7 +415,6 @@ public class DanaRExecutionService extends Service {
         }
 
         MsgBolusProgress progress = new MsgBolusProgress(amount, t); // initialize static variables
-        MainApp.bus().post(new EventDanaRBolusStart());
         long startTime = System.currentTimeMillis();
 
         if (!stop.stopped) {
@@ -545,10 +551,6 @@ public class DanaRExecutionService extends Service {
     }
 
     private void waitMsec(long msecs) {
-        try {
-            Thread.sleep(msecs);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        SystemClock.sleep(msecs);
     }
 }

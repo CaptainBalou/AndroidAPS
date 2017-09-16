@@ -21,6 +21,9 @@ import android.widget.TextView;
 import com.crashlytics.android.answers.Answers;
 import com.crashlytics.android.answers.CustomEvent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.DecimalFormat;
 
 import info.nightscout.androidaps.Constants;
@@ -37,6 +40,7 @@ import info.nightscout.utils.SP;
 import info.nightscout.utils.SafeParse;
 
 public class FillDialog extends DialogFragment implements OnClickListener {
+    private static Logger log = LoggerFactory.getLogger(FillDialog.class);
 
     Button deliverButton;
     TextView insulin;
@@ -69,8 +73,8 @@ public class FillDialog extends DialogFragment implements OnClickListener {
 
         insulin = (TextView) view.findViewById(R.id.treatments_newtreatment_insulinamount);
         Double maxInsulin = MainApp.getConfigBuilder().applyBolusConstraints(Constants.bolusOnlyForCheckLimit);
-
-        editInsulin = new PlusMinusEditText(view, R.id.treatments_newtreatment_insulinamount, R.id.treatments_newtreatment_insulinamount_plus, R.id.treatments_newtreatment_insulinamount_minus, 0d, 0d, maxInsulin, 0.05d, new DecimalFormat("0.00"), false);
+        double bolusstep = MainApp.getConfigBuilder().getPumpDescription().bolusStep;
+        editInsulin = new PlusMinusEditText(view, R.id.treatments_newtreatment_insulinamount, R.id.treatments_newtreatment_insulinamount_plus, R.id.treatments_newtreatment_insulinamount_minus, 0d, 0d, maxInsulin, bolusstep, new DecimalFormat("0.00"), false);
 
         //setup preset buttons
         Button button1 = (Button) view.findViewById(R.id.fill_preset_button1);
@@ -164,8 +168,8 @@ public class FillDialog extends DialogFragment implements OnClickListener {
                                 DetailedBolusInfo detailedBolusInfo = new DetailedBolusInfo();
                                 detailedBolusInfo.insulin = finalInsulinAfterConstraints;
                                 detailedBolusInfo.context = context;
-                                detailedBolusInfo.addToTreatments = false;
-                                detailedBolusInfo.source = Source.NONE;
+                                detailedBolusInfo.source = Source.USER;
+                                detailedBolusInfo.isValid = false; // do not count it in IOB (for pump history)
                                 PumpEnactResult result = pump.deliverTreatment(detailedBolusInfo);
                                 if (!result.success) {
                                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -183,8 +187,8 @@ public class FillDialog extends DialogFragment implements OnClickListener {
             builder.setNegativeButton(getString(R.string.cancel), null);
             builder.show();
             dismiss();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (RuntimeException e) {
+            log.error("Unhandled exception", e);
         }
     }
 

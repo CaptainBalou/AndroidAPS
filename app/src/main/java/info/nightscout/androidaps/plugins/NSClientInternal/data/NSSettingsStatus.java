@@ -4,8 +4,11 @@ import android.support.annotation.Nullable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.Objects;
 
 /*
  {
@@ -98,6 +101,8 @@ import java.util.Date;
  }
  */
 public class NSSettingsStatus {
+    private static Logger log = LoggerFactory.getLogger(NSSettingsStatus.class);
+
     private static NSSettingsStatus instance = null;
 
     public static NSSettingsStatus getInstance() {
@@ -159,7 +164,7 @@ public class NSSettingsStatus {
                 return new JSONObject(extended);
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return null;
 
@@ -188,13 +193,13 @@ public class NSSettingsStatus {
                         return result;
                     }
                 }
-                if (settingsO.has("alarmTimeagoWarnMins") && what == "alarmTimeagoWarnMins"){
+                if (settingsO.has("alarmTimeagoWarnMins") && Objects.equals(what, "alarmTimeagoWarnMins")){
                     Double result = settingsO.getDouble(what);
                     return result;
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return null;
     }
@@ -206,7 +211,7 @@ public class NSSettingsStatus {
             try {
                 ret = data.getString(key);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return ret;
@@ -218,7 +223,7 @@ public class NSSettingsStatus {
             try {
                 ret = data.getInt(key);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return ret;
@@ -230,7 +235,7 @@ public class NSSettingsStatus {
             try {
                 ret = data.getLong(key);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return ret;
@@ -242,7 +247,7 @@ public class NSSettingsStatus {
             try {
                 ret = new Date(data.getString(key));
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return ret;
@@ -254,7 +259,7 @@ public class NSSettingsStatus {
             try {
                 ret = data.getBoolean(key);
             } catch (JSONException e) {
-                e.printStackTrace();
+                log.error("Unhandled exception", e);
             }
         }
         return ret;
@@ -300,7 +305,7 @@ public class NSSettingsStatus {
                     return pump != null  && pump.has(setting) ? pump.getDouble(setting) : 30;
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return 0d;
     }
@@ -316,7 +321,7 @@ public class NSSettingsStatus {
                 return pump;
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return null;
     }
@@ -328,7 +333,7 @@ public class NSSettingsStatus {
                 return pump.getBoolean("enableAlerts");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return false;
     }
@@ -340,7 +345,7 @@ public class NSSettingsStatus {
                 return pump.getString("fields");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return "";
     }
@@ -352,7 +357,7 @@ public class NSSettingsStatus {
                 return pump.getBoolean("enableAlerts");
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Unhandled exception", e);
         }
         return false;
     }
