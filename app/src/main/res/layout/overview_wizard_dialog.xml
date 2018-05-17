@@ -108,7 +108,7 @@
                 android:gravity="left"
                 android:minWidth="45dp"
                 android:paddingLeft="5dp"
-                android:text="@string/treatments_wizard_unit_label"
+                android:text="@string/insulin_unit_shortname"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
         </LinearLayout>
@@ -199,6 +199,33 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/treatments_wizard_notes_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:width="120dp"
+                android:padding="10dp"
+                android:text="@string/careportal_newnstreatment_notes_label"
+                android:textAppearance="@android:style/TextAppearance.Material.Small"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/treatment_wizard_notes"
+                android:layout_width="155dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="left"
+                android:inputType="text|textCapSentences"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        </LinearLayout>
+
         <include layout="@layout/mdtp_done_button" />
 
         <View
@@ -225,15 +252,29 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="24dp"
                 android:text="@string/treatments_wizard_bg_label"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+            <CheckBox
+                android:id="@+id/treatments_wizard_ttcheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:width="32dp"
+                android:checked="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:width="30dp"
+                android:text="@string/treatments_wizard_tt_label"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
                 android:id="@+id/treatments_wizard_bg"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -261,7 +302,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="86dp"
                 android:text="@string/treatments_wizard_bgtrend_label"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -269,7 +310,7 @@
                 android:id="@+id/treatments_wizard_bgtrend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -298,7 +339,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="86dp"
                 android:text="@string/treatments_wizard_cob_label"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -306,7 +347,7 @@
                 android:id="@+id/treatments_wizard_cob"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -404,7 +445,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="86dp"
                 android:text="@string/treatments_wizard_carbs_label"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -412,7 +453,7 @@
                 android:id="@+id/treatments_wizard_carbs"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -438,7 +479,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="86dp"
                 android:text="@string/superbolus"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -446,7 +487,7 @@
                 android:id="@+id/treatments_wizard_sb"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -472,7 +513,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="80dp"
+                android:width="86dp"
                 android:text="@string/treatments_wizard_correction_label"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
@@ -480,7 +521,7 @@
                 android:id="@+id/treatments_wizard_correction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:width="100dp"
+                android:width="94dp"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView

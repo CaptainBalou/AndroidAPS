@@ -17,108 +17,60 @@ import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.Services.Intents;
 import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.interfaces.PluginBase;
+import info.nightscout.androidaps.interfaces.PluginDescription;
+import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
-import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.plugins.ProfileNS.events.EventNSProfileUpdateGUI;
-import info.nightscout.androidaps.plugins.SmsCommunicator.SmsCommunicatorPlugin;
 import info.nightscout.utils.SP;
 
 /**
  * Created by mike on 05.08.2016.
  */
-public class NSProfilePlugin implements PluginBase, ProfileInterface {
+public class NSProfilePlugin extends PluginBase implements ProfileInterface {
     private static Logger log = LoggerFactory.getLogger(NSProfilePlugin.class);
 
-    @Override
-    public String getFragmentClass() {
-        return NSProfileFragment.class.getName();
+    private static NSProfilePlugin nsProfilePlugin;
+
+    public static NSProfilePlugin getPlugin() {
+        if (nsProfilePlugin == null)
+            nsProfilePlugin = new NSProfilePlugin();
+        return nsProfilePlugin;
     }
 
-    static boolean fragmentEnabled = true;
-    static boolean fragmentVisible = true;
+    private ProfileStore profile = null;
 
-    static ProfileStore profile = null;
-
-    public NSProfilePlugin() {
-        MainApp.bus().register(this);
+    private NSProfilePlugin() {
+        super(new PluginDescription()
+                .mainType(PluginType.PROFILE)
+                .fragmentClass(NSProfileFragment.class.getName())
+                .pluginName(R.string.profileviewer)
+                .shortName(R.string.profileviewer_shortname)
+                .alwaysEnabled(Config.NSCLIENT)
+                .alwayVisible(Config.NSCLIENT)
+                .showInList(!Config.NSCLIENT)
+        );
         loadNSProfile();
-
     }
 
     @Override
-    public String getName() {
-        return MainApp.instance().getString(R.string.profileviewer);
+    protected void onStart() {
+        MainApp.bus().register(this);
+        super.onStart();
     }
 
     @Override
-    public String getNameShort() {
-        String name = MainApp.sResources.getString(R.string.profileviewer_shortname);
-        if (!name.trim().isEmpty()) {
-            //only if translation exists
-            return name;
-        }
-        // use long name as fallback
-        return getName();
-    }
-
-    @Override
-    public boolean isEnabled(int type) {
-        return type == PROFILE && (Config.NSCLIENT || fragmentEnabled);
-    }
-
-    @Override
-    public boolean isVisibleInTabs(int type) {
-        return type == PROFILE && (Config.NSCLIENT ||fragmentVisible);
-    }
-
-    @Override
-    public boolean canBeHidden(int type) {
-        return true;
-    }
-
-    @Override
-    public boolean hasFragment() {
-        return true;
-    }
-
-    @Override
-    public boolean showInList(int type) {
-        return !Config.NSCLIENT;
-    }
-
-    @Override
-    public void setFragmentEnabled(int type, boolean fragmentEnabled) {
-        if (type == PROFILE) this.fragmentEnabled = fragmentEnabled;
-    }
-
-    @Override
-    public void setFragmentVisible(int type, boolean fragmentVisible) {
-        if (type == PROFILE) this.fragmentVisible = fragmentVisible;
-    }
-
-    @Override
-    public int getType() {
-        return PluginBase.PROFILE;
+    protected void onStop() {
+        MainApp.bus().unregister(this);
     }
 
     @Subscribe
-    public static void storeNewProfile(ProfileStore newProfile) {
+    public void storeNewProfile(ProfileStore newProfile) {
         profile = new ProfileStore(newProfile.getData());
         storeNSProfile();
         MainApp.bus().post(new EventNSProfileUpdateGUI());
-        PumpInterface pump = MainApp.getConfigBuilder();
-        if (SP.getBoolean("syncprofiletopump", false)) {
-            if (pump.setNewBasalProfile(MainApp.getConfigBuilder().getProfile()) == PumpInterface.SUCCESS) {
-                SmsCommunicatorPlugin smsCommunicatorPlugin = MainApp.getSpecificPlugin(SmsCommunicatorPlugin.class);
-                if (smsCommunicatorPlugin != null && smsCommunicatorPlugin.isEnabled(PluginBase.GENERAL)) {
-                    smsCommunicatorPlugin.sendNotificationToAllNumbers(MainApp.sResources.getString(R.string.profile_set_ok));
-                }
-            }
-        }
-
     }
 
-    private static void storeNSProfile() {
+    private void storeNSProfile() {
         SP.putString("profile", profile.getData().toString());
         if (Config.logPrefsChange)
             log.debug("Storing profile");

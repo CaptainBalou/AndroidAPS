@@ -21,10 +21,12 @@ import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.interfaces.ProfileInterface;
+import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
 import info.nightscout.androidaps.plugins.PumpDanaRKorean.DanaRKoreanPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaRv2.DanaRv2Plugin;
+import info.nightscout.androidaps.plugins.Treatments.fragments.ProfileGraph;
 import info.nightscout.utils.DecimalFormatter;
 
 /**
@@ -41,23 +43,18 @@ public class ProfileViewDialog extends DialogFragment {
     private  TextView isf;
     private  TextView basal;
     private  TextView target;
+    private ProfileGraph basalGraph;
+
 
     private  Button refreshButton;
 
-    Handler mHandler;
-    static HandlerThread mHandlerThread;
-
     public ProfileViewDialog() {
-        mHandlerThread = new HandlerThread(ProfileViewDialog.class.getSimpleName());
-        mHandlerThread.start();
-
-        mHandler = new Handler(mHandlerThread.getLooper());
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View layout = inflater.inflate(R.layout.nsprofileviewer_fragment, container, false);
+        View layout = inflater.inflate(R.layout.profileviewer_fragment, container, false);
 
         noProfile = (TextView) layout.findViewById(R.id.profileview_noprofile);
         units = (TextView) layout.findViewById(R.id.profileview_units);
@@ -72,22 +69,11 @@ public class ProfileViewDialog extends DialogFragment {
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        DanaRPump.getInstance().lastSettingsRead = new Date(0);
-                        if (MainApp.getSpecificPlugin(DanaRPlugin.class).isEnabled(PluginBase.PUMP))
-                            DanaRPlugin.doConnect("ProfileViewDialog");
-                        if (MainApp.getSpecificPlugin(DanaRKoreanPlugin.class).isEnabled(PluginBase.PUMP))
-                            DanaRKoreanPlugin.doConnect("ProfileViewDialog");
-                        if (MainApp.getSpecificPlugin(DanaRv2Plugin.class).isEnabled(PluginBase.PUMP))
-                            DanaRv2Plugin.doConnect("ProfileViewDialog");
-                    }
-                });
+                ConfigBuilderPlugin.getCommandQueue().readStatus("ProfileViewDialog", null);
                 dismiss();
             }
         });
-
+        basalGraph = (ProfileGraph) layout.findViewById(R.id.basal_graph);
         setContent();
         return layout;
     }
@@ -99,12 +85,6 @@ public class ProfileViewDialog extends DialogFragment {
     }
 
     private void setContent() {
-//        if (profile == null) {
-//            noProfile.setVisibility(View.VISIBLE);
-//            return;
-//        } else {
-//            noProfile.setVisibility(View.GONE);
-//        }
         ProfileStore store = ((ProfileInterface)MainApp.getConfigBuilder().getActivePump()).getProfile();
         if (store != null) {
             noProfile.setVisibility(View.GONE);
@@ -116,6 +96,7 @@ public class ProfileViewDialog extends DialogFragment {
             isf.setText(profile.getIsfList());
             basal.setText(profile.getBasalList());
             target.setText(profile.getTargetList());
+            basalGraph.show(store.getDefaultProfile());
         } else {
             noProfile.setVisibility(View.VISIBLE);
         }

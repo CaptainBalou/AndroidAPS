@@ -1,16 +1,11 @@
 package info.nightscout.androidaps.plugins.OpenAPSMA;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import com.eclipsesource.v8.V8Object;
-
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mozilla.javascript.NativeObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.plugins.Loop.APSResult;
 
 public class DetermineBasalResultMA extends APSResult {
@@ -20,40 +15,38 @@ public class DetermineBasalResultMA extends APSResult {
     public double eventualBG;
     public double snoozeBG;
     public String mealAssist;
-    public IobTotal iob;
 
-    public DetermineBasalResultMA(V8Object result, JSONObject j) {
+    public DetermineBasalResultMA(NativeObject result, JSONObject j) {
         json = j;
-        if (result.contains("error")) {
-            reason = result.getString("error");
-            changeRequested = false;
+        if (result.containsKey("error")) {
+            reason = (String) result.get("error");
+            tempBasalRequested = false;
             rate = -1;
             duration = -1;
             mealAssist = "";
         } else {
-            reason = result.getString("reason");
-            eventualBG = result.getDouble("eventualBG");
-            snoozeBG = result.getDouble("snoozeBG");
-            if (result.contains("rate")) {
-                rate = result.getDouble("rate");
+            reason = result.get("reason").toString();
+            eventualBG = (Double) result.get("eventualBG");
+            snoozeBG = (Double) result.get("snoozeBG");
+            if (result.containsKey("rate")) {
+                rate = (Double) result.get("rate");
                 if (rate < 0d) rate = 0d;
-                changeRequested = true;
+                tempBasalRequested = true;
             } else {
                 rate = -1;
-                changeRequested = false;
+                tempBasalRequested = false;
             }
-            if (result.contains("duration")) {
-                duration = result.getInteger("duration");
+            if (result.containsKey("duration")) {
+                duration = ((Double) result.get("duration")).intValue();
                 //changeRequested as above
             } else {
                 duration = -1;
-                changeRequested = false;
+                tempBasalRequested = false;
             }
-            if (result.contains("mealAssist")) {
-                mealAssist = result.getString("mealAssist");
+            if (result.containsKey("mealAssist")) {
+                mealAssist = result.get("mealAssist").toString();
             } else mealAssist = "";
         }
-        result.release();
     }
 
     public DetermineBasalResultMA() {
@@ -65,10 +58,10 @@ public class DetermineBasalResultMA extends APSResult {
         newResult.reason = new String(reason);
         newResult.rate = rate;
         newResult.duration = duration;
-        newResult.changeRequested = changeRequested;
+        newResult.tempBasalRequested = isChangeRequested();
         newResult.rate = rate;
         newResult.duration = duration;
-        newResult.changeRequested = changeRequested;
+        newResult.tempBasalRequested = isChangeRequested();
 
         try {
             newResult.json = new JSONObject(json.toString());
@@ -77,7 +70,7 @@ public class DetermineBasalResultMA extends APSResult {
         }
         newResult.eventualBG = eventualBG;
         newResult.snoozeBG = snoozeBG;
-        newResult.mealAssist = new String(mealAssist);
+        newResult.mealAssist = mealAssist;
         return newResult;
     }
 

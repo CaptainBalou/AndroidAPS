@@ -1,14 +1,12 @@
 package info.nightscout.androidaps.plugins.PumpDanaR.comm;
 
-import com.j256.ormlite.stmt.query.Not;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.plugins.Overview.Notification;
+import info.nightscout.androidaps.plugins.Overview.notifications.Notification;
 import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
 
 public class MsgSetSingleBasalProfile extends MessageBase {
@@ -34,12 +32,12 @@ public class MsgSetSingleBasalProfile extends MessageBase {
         if (result != 1) {
             failed = true;
             log.debug("Set basal profile result: " + result + " FAILED!!!");
-            Notification reportFail = new Notification(Notification.PROFILE_SET_FAILED, MainApp.sResources.getString(R.string.profile_set_failed), Notification.URGENT);
+            Notification reportFail = new Notification(Notification.PROFILE_SET_FAILED, MainApp.gs(R.string.profile_set_failed), Notification.URGENT);
             MainApp.bus().post(new EventNewNotification(reportFail));
         } else {
             if (Config.logDanaMessageDetail)
                 log.debug("Set basal profile result: " + result);
-            Notification reportOK = new Notification(Notification.PROFILE_SET_OK, MainApp.sResources.getString(R.string.profile_set_ok), Notification.INFO, 60);
+            Notification reportOK = new Notification(Notification.PROFILE_SET_OK, MainApp.gs(R.string.profile_set_ok), Notification.INFO, 60);
             MainApp.bus().post(new EventNewNotification(reportOK));
         }
     }

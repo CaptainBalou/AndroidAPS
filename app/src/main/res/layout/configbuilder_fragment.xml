@@ -184,7 +184,7 @@
                     android:layout_marginBottom="5dp"
                     android:background="@color/mdtp_circle_color"
                     android:paddingLeft="5dp"
-                    android:text="@string/configbuilder_constraints"
+                    android:text="@string/constraints"
                     android:textAllCaps="true"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="@android:color/black"
@@ -192,6 +192,25 @@
 
                  <ListView
                     android:id="@+id/configbuilder_constraintslistview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/cardColorBackground" />
+
+                <TextView
+                    android:id="@+id/configbuilder_treatmentslabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="5dp"
+                    android:background="@color/mdtp_circle_color"
+                    android:paddingLeft="5dp"
+                    android:text="@string/configbuilder_treatments"
+                    android:textAllCaps="true"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold" />
+
+                <ListView
+                    android:id="@+id/configbuilder_treatmentslistview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/cardColorBackground" />

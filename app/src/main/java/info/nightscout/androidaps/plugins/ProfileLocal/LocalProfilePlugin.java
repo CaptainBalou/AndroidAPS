@@ -1,7 +1,6 @@
 package info.nightscout.androidaps.plugins.ProfileLocal;
 
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,25 +12,42 @@ import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.interfaces.PluginBase;
-import info.nightscout.androidaps.interfaces.ProfileInterface;
 import info.nightscout.androidaps.data.ProfileStore;
+import info.nightscout.androidaps.interfaces.PluginBase;
+import info.nightscout.androidaps.interfaces.PluginDescription;
+import info.nightscout.androidaps.interfaces.PluginType;
+import info.nightscout.androidaps.interfaces.ProfileInterface;
+import info.nightscout.utils.DecimalFormatter;
 import info.nightscout.utils.SP;
 
 /**
  * Created by mike on 05.08.2016.
  */
-public class LocalProfilePlugin implements PluginBase, ProfileInterface {
+public class LocalProfilePlugin extends PluginBase implements ProfileInterface {
+    public static final String LOCAL_PROFILE = "LocalProfile";
     private static Logger log = LoggerFactory.getLogger(LocalProfilePlugin.class);
 
-    private static boolean fragmentEnabled = false;
-    private static boolean fragmentVisible = true;
+    private static LocalProfilePlugin localProfilePlugin;
 
-    private static ProfileStore convertedProfile = null;
-    private static String convertedProfileName = null;
+    public static LocalProfilePlugin getPlugin() {
+        if (localProfilePlugin == null)
+            localProfilePlugin = new LocalProfilePlugin();
+        return localProfilePlugin;
+    }
 
-    final private String DEFAULTARRAY = "[{\"time\":\"00:00\",\"timeAsSeconds\":0,\"value\":0}]";
+    private ProfileStore convertedProfile = null;
 
+    private static final String DEFAULTARRAY = "[{\"time\":\"00:00\",\"timeAsSeconds\":0,\"value\":0}]";
+
+    public boolean isEdited() {
+        return edited;
+    }
+
+    public void setEdited(boolean edited) {
+        this.edited = edited;
+    }
+
+    boolean edited;
     boolean mgdl;
     boolean mmol;
     Double dia;
@@ -42,136 +58,80 @@ public class LocalProfilePlugin implements PluginBase, ProfileInterface {
     JSONArray targetHigh;
 
     public LocalProfilePlugin() {
+        super(new PluginDescription()
+                .mainType(PluginType.PROFILE)
+                .fragmentClass(LocalProfileFragment.class.getName())
+                .pluginName(R.string.localprofile)
+                .shortName(R.string.localprofile_shortname)
+        );
         loadSettings();
     }
 
-    @Override
-    public String getFragmentClass() {
-        return LocalProfileFragment.class.getName();
-    }
+    public synchronized void storeSettings() {
+        SP.putBoolean(LOCAL_PROFILE + "mmol", mmol);
+        SP.putBoolean(LOCAL_PROFILE + "mgdl", mgdl);
+        SP.putString(LOCAL_PROFILE + "dia", dia.toString());
+        SP.putString(LOCAL_PROFILE + "ic", ic.toString());
+        SP.putString(LOCAL_PROFILE + "isf", isf.toString());
+        SP.putString(LOCAL_PROFILE + "basal", basal.toString());
+        SP.putString(LOCAL_PROFILE + "targetlow", targetLow.toString());
+        SP.putString(LOCAL_PROFILE + "targethigh", targetHigh.toString());
 
-    @Override
-    public int getType() {
-        return PluginBase.PROFILE;
-    }
-
-    @Override
-    public String getName() {
-        return MainApp.instance().getString(R.string.localprofile);
-    }
-
-    @Override
-    public String getNameShort() {
-        String name = MainApp.sResources.getString(R.string.localprofile_shortname);
-        if (!name.trim().isEmpty()) {
-            //only if translation exists
-            return name;
-        }
-        // use long name as fallback
-        return getName();
-    }
-
-    @Override
-    public boolean isEnabled(int type) {
-        return type == PROFILE && fragmentEnabled;
-    }
-
-    @Override
-    public boolean isVisibleInTabs(int type) {
-        return type == PROFILE && fragmentVisible;
-    }
-
-    @Override
-    public boolean canBeHidden(int type) {
-        return true;
-    }
-
-    @Override
-    public boolean hasFragment() {
-        return true;
-    }
-
-    @Override
-    public boolean showInList(int type) {
-        return true;
-    }
-
-    @Override
-    public void setFragmentEnabled(int type, boolean fragmentEnabled) {
-        if (type == PROFILE) this.fragmentEnabled = fragmentEnabled;
-    }
-
-    @Override
-    public void setFragmentVisible(int type, boolean fragmentVisible) {
-        if (type == PROFILE) this.fragmentVisible = fragmentVisible;
-    }
-
-    public void storeSettings() {
+        createAndStoreConvertedProfile();
+        edited = false;
         if (Config.logPrefsChange)
-            log.debug("Storing settings");
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(MainApp.instance().getApplicationContext());
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putBoolean("LocalProfile" + "mmol", mmol);
-        editor.putBoolean("LocalProfile" + "mgdl", mgdl);
-        editor.putString("LocalProfile" + "dia", dia.toString());
-        editor.putString("LocalProfile" + "ic", ic.toString());
-        editor.putString("LocalProfile" + "isf", isf.toString());
-        editor.putString("LocalProfile" + "basal", basal.toString());
-        editor.putString("LocalProfile" + "targetlow", targetLow.toString());
-        editor.putString("LocalProfile" + "targethigh", targetHigh.toString());
-
-        editor.commit();
-        createConvertedProfile();
+            log.debug("Storing settings: " + getRawProfile().getData().toString());
     }
 
-    private void loadSettings() {
+    public synchronized void loadSettings() {
         if (Config.logPrefsChange)
             log.debug("Loading stored settings");
 
-        mgdl = SP.getBoolean("LocalProfile" + "mgdl", false);
-        mmol = SP.getBoolean("LocalProfile" + "mmol", true);
-        dia = SP.getDouble("LocalProfile" + "dia", Constants.defaultDIA);
+        mgdl = SP.getBoolean(LOCAL_PROFILE + "mgdl", false);
+        mmol = SP.getBoolean(LOCAL_PROFILE + "mmol", true);
+        dia = SP.getDouble(LOCAL_PROFILE + "dia", Constants.defaultDIA);
         try {
-            ic = new JSONArray(SP.getString("LocalProfile" + "ic", DEFAULTARRAY));
+            ic = new JSONArray(SP.getString(LOCAL_PROFILE + "ic", DEFAULTARRAY));
         } catch (JSONException e1) {
             try {
                 ic = new JSONArray(DEFAULTARRAY);
-            } catch (JSONException e2) {
+            } catch (JSONException ignored) {
             }
         }
         try {
-            isf = new JSONArray(SP.getString("LocalProfile" + "isf", DEFAULTARRAY));
+            isf = new JSONArray(SP.getString(LOCAL_PROFILE + "isf", DEFAULTARRAY));
         } catch (JSONException e1) {
             try {
                 isf = new JSONArray(DEFAULTARRAY);
-            } catch (JSONException e2) {
+            } catch (JSONException ignored) {
             }
         }
         try {
-            basal = new JSONArray(SP.getString("LocalProfile" + "basal", DEFAULTARRAY));
+            basal = new JSONArray(SP.getString(LOCAL_PROFILE + "basal", DEFAULTARRAY));
         } catch (JSONException e1) {
             try {
                 basal = new JSONArray(DEFAULTARRAY);
-            } catch (JSONException e2) {
+            } catch (JSONException ignored) {
             }
         }
         try {
-            targetLow = new JSONArray(SP.getString("LocalProfile" + "targetlow", DEFAULTARRAY));
+            targetLow = new JSONArray(SP.getString(LOCAL_PROFILE + "targetlow", DEFAULTARRAY));
         } catch (JSONException e1) {
             try {
                 targetLow = new JSONArray(DEFAULTARRAY);
-            } catch (JSONException e2) {
+            } catch (JSONException ignored) {
             }
         }
         try {
-            targetHigh = new JSONArray(SP.getString("LocalProfile" + "targethigh", DEFAULTARRAY));
+            targetHigh = new JSONArray(SP.getString(LOCAL_PROFILE + "targethigh", DEFAULTARRAY));
         } catch (JSONException e1) {
             try {
                 targetHigh = new JSONArray(DEFAULTARRAY);
-            } catch (JSONException e2) {
+            } catch (JSONException ignored) {
             }
         }
-        createConvertedProfile();
+        edited = false;
+        createAndStoreConvertedProfile();
     }
 
     /*
@@ -212,13 +172,22 @@ public class LocalProfilePlugin implements PluginBase, ProfileInterface {
             "created_at": "2016-06-16T08:34:41.256Z"
         }
         */
-    void createConvertedProfile() {
+    private void createAndStoreConvertedProfile() {
+        convertedProfile = createProfileStore();
+    }
+
+    public synchronized boolean isValidEditState() {
+        return createProfileStore().getDefaultProfile().isValid(MainApp.gs(R.string.localprofile), false);
+    }
+
+    @NonNull
+    public ProfileStore createProfileStore() {
         JSONObject json = new JSONObject();
         JSONObject store = new JSONObject();
         JSONObject profile = new JSONObject();
 
         try {
-            json.put("defaultProfile", "LocalProfile");
+            json.put("defaultProfile", LOCAL_PROFILE);
             json.put("store", store);
             profile.put("dia", dia);
             profile.put("carbratio", ic);
@@ -227,16 +196,21 @@ public class LocalProfilePlugin implements PluginBase, ProfileInterface {
             profile.put("target_low", targetLow);
             profile.put("target_high", targetHigh);
             profile.put("units", mgdl ? Constants.MGDL : Constants.MMOL);
-            store.put("LocalProfile", profile);
+            store.put(LOCAL_PROFILE, profile);
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
-        convertedProfile = new ProfileStore(json);
-        convertedProfileName = "LocalProfile";
+        return new ProfileStore(json);
     }
 
     @Override
     public ProfileStore getProfile() {
+        if (!convertedProfile.getDefaultProfile().isValid(MainApp.gs(R.string.localprofile)))
+            return null;
+        return convertedProfile;
+    }
+
+    public ProfileStore getRawProfile() {
         return convertedProfile;
     }
 
@@ -247,7 +221,7 @@ public class LocalProfilePlugin implements PluginBase, ProfileInterface {
 
     @Override
     public String getProfileName() {
-        return convertedProfileName;
+        return DecimalFormatter.to2Decimal(convertedProfile.getDefaultProfile().percentageBasalSum()) + "U ";
     }
 
 }
